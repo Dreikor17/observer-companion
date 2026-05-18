@@ -2053,7 +2053,7 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
   #endif
   } else if (memcmp(config, "alert.hashtag", 13) == 0) {
     sprintf(reply, "> %s", _prefs->alert_hashtag[0] ? _prefs->alert_hashtag : "(unset)");
-  } else if (memcmp(config, "alert.psk", 9) == 0) {
+  } else if (sender_timestamp == 0 && memcmp(config, "alert.psk", 9) == 0) {  // from serial command line only
     sprintf(reply, "> %s", _prefs->alert_psk_hex[0] ? _prefs->alert_psk_hex : "(unset)");
   } else if (memcmp(config, "alert.region", 12) == 0) {
     sprintf(reply, "> %s", _prefs->alert_region[0] ? _prefs->alert_region : "(unset, using default scope)");
