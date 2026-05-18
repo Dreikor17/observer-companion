@@ -686,13 +686,8 @@ set timezone UTC-5               # UTC offset
 
 Observer nodes include an optional SNMP v2c agent that exposes radio stats, MQTT connectivity, memory usage, and network information to standard monitoring tools. See [MQTT_SNMP.md](MQTT_SNMP.md) for setup and OID reference.
 
-## Dependencies
 
-- **PsychicMqttClient**: MQTT client library (supports WSS and direct MQTT)
-- **ArduinoJson**: JSON message formatting
-- **NTPClient**: Network time protocol client
-- **Timezone**: Timezone conversion library (JChristensen/Timezone)
-- **WiFi**: ESP32 WiFi functionality
-- **Ed25519**: Cryptographic library for JWT token signing
-- **JWTHelper**: Custom JWT token generation for device authentication
-- **SNMP_Agent**: Optional SNMPv2c agent (0neblock/SNMP_Agent, observer builds only)
+## Fault Alerts
+
+Fault alerts broadcast LoRa group-channel notifications when WiFi or configured MQTT links stay down past configured thresholds, with optional recovery notices and rate limiting to avoid spam.
+For configuration, CLI commands, examples, and operational notes, see [ALERTS.md](ALERTS.md).

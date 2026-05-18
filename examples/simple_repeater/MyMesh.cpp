@@ -947,6 +947,20 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
 #endif
   _prefs.radio_watchdog_minutes = 5; // 5 minutes default
 
+  // Alert channel defaults — disabled by default, and the channel is left
+  // unconfigured so a freshly-flashed observer never broadcasts on the
+  // well-known Public hashtag. Operators must explicitly pick a private
+  // key (`set alert.psk`) or a hashtag (`set alert.hashtag`) before alerts
+  // can fire. The sender prefix on outgoing alert messages is always the
+  // node name (`set name ...`), so there's no separate `alert.name`.
+  _prefs.alert_enabled = 0;
+  _prefs.alert_psk_hex[0] = '\0';
+  _prefs.alert_hashtag[0] = '\0';
+  _prefs.alert_region[0] = '\0';      // empty = use default_scope
+  _prefs.alert_wifi_minutes = 30;     // 30 minutes
+  _prefs.alert_mqtt_minutes = 240;    // 4 hours
+  _prefs.alert_min_interval_min = 60; // re-arm window: 1 hour
+
   // bridge defaults
   _prefs.bridge_enabled = 1;    // enabled
   _prefs.bridge_delay   = 500;  // milliseconds
@@ -1074,6 +1088,15 @@ void MyMesh::begin(FILESYSTEM *fs) {
   }
 #endif
 
+  // Wire fault-alert reporter. begin() is safe regardless of bridge state.
+  // Passing `this` as the callbacks lets the reporter resolve a TransportKey
+  // scope (alert.region override, falling back to default_scope) so alert
+  // floods ride the same scope as adverts/channel messages.
+  _alerter.begin(&_prefs, this, this);
+#if defined(WITH_MQTT_BRIDGE)
+  _alerter.setBridge(bridge);
+#endif
+
   radio_driver.setParams(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
   radio_driver.setTxPower(_prefs.tx_power_dbm);
 
@@ -1098,6 +1121,24 @@ void MyMesh::sendFloodScoped(const TransportKey& scope, mesh::Packet* pkt, uint3
     codes[1] = 0;  // REVISIT: set to 'home' Region, for sender/return region?
     sendFlood(pkt, codes, delay_millis, path_hash_size);
   }
+}
+
+bool MyMesh::resolveAlertScope(TransportKey& dest) {
+  // Prefer an explicit alert.region override; look it up lazily via
+  // RegionMap so the operator can name a region that doesn't exist yet
+  // without polluting region_map state — we just silently fall through
+  // to default_scope on miss.
+  if (_prefs.alert_region[0]) {
+    auto r = region_map.findByNamePrefix(_prefs.alert_region);
+    if (r && region_map.getTransportKeysFor(*r, &dest, 1) > 0 && !dest.isNull()) {
+      return true;
+    }
+  }
+  if (!default_scope.isNull()) {
+    dest = default_scope;
+    return true;
+  }
+  return false;
 }
 
 void MyMesh::applyTempRadioParams(float freq, float bw, uint8_t sf, uint8_t cr, int timeout_mins) {
@@ -1424,6 +1465,8 @@ void MyMesh::loop() {
   uint32_t now = millis();
   uptime_millis += now - last_millis;
   last_millis = now;
+
+  _alerter.onLoop(now);
 
 #ifdef WITH_SNMP
   // Push radio stats to SNMP agent every 2 seconds
