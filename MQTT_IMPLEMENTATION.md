@@ -33,7 +33,7 @@ If migrating from an existing node (e.g., a Raspberry Pi gateway), restore the p
 set prv.key <your_64_hex_char_private_key>
 ```
 
-**4. Configure WiFi credentials**
+**4. Configure WiFi credentials** (value is the rest of the line; do not use quotes — see [WiFi Commands](#wifi-commands))
 ```bash
 set wifi.ssid YourWiFiNetwork
 set wifi.pwd YourWiFiPassword
@@ -222,7 +222,7 @@ The MQTT bridge comes with the following defaults for fresh installs:
 - **Slot 2**: `analyzer-eu`
 - **Slots 3-6**: `none` (disabled)
 - **WiFi SSID**: (blank — must be configured)
-- **WiFi Password**: (blank — must be configured)
+- **WiFi Password**: (blank — optional for open networks)
 - **WiFi Power Save**: `none` (no power save)
 - **Timezone**: (blank — uses UTC until configured)
 - **Timezone Offset**: 0 (fallback, no offset)
@@ -383,6 +383,8 @@ These settings apply across all MQTT slots:
 - `set wifi.ssid <ssid>` - Set WiFi SSID
 - `set wifi.pwd <password>` - Set WiFi password
 - `set wifi.powersave none|min|max` - Set WiFi power save mode
+
+> **Note:** The value is everything after the first space (spaces in SSID/password are fine). Do not wrap in quotes — they are stored literally. Max length: 31 characters (SSID), 63 (password). For open networks, use `set wifi.pwd ` with nothing after the space.
   - `none` - No power saving (best performance, highest power consumption)
   - `min` - Minimum power saving (balanced performance and power)
   - `max` - Maximum power saving (lowest power consumption, may affect performance)
@@ -606,6 +608,9 @@ set prv.key <your_64_hex_char_private_key>
 ```
 
 ### Step 3: Configure WiFi
+
+Use the rest of the line as the value (spaces allowed; no quotes). See [WiFi Commands](#wifi-commands).
+
 ```
 set wifi.ssid YourWiFiNetwork
 set wifi.pwd YourWiFiPassword
