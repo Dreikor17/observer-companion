@@ -109,6 +109,8 @@ The MQTT bridge uses a slot-based architecture with up to 6 concurrent connectio
 | `meshat.se` | mqtts://mqtt.meshat.se:8883 | Username/password (fixed in firmware) | MQTT over TLS |
 | `eastidahomesh` | wss://broker.eastidahomesh.net:443 | None | WSS |
 | `coloradomesh` | wss://mqtt.meshcore.coloradomesh.org:1883 | JWT (Ed25519) | WSS |
+| `meshcore-ca-1` | mqtt1.meshcore.ca:443 | JWT (Ed25519) | WSS |
+| `meshcore-ca-2` | mqtt2.meshcore.ca:443 | JWT (Ed25519) | WSS |
 | `custom` | User-configured | Username/Password | MQTT or WSS |
 | `none` | (disabled) | — | — |
 
@@ -207,11 +209,37 @@ You can flash the merged firmware using either the web flasher or the command li
 - `MQTT_WIFI_TX_POWER` - WiFi TX power level (default: `WIFI_POWER_11dBm`)
 - ~~`MQTT_WIFI_POWER_SAVE_DEFAULT`~~ - Removed; all builds now default to `none` (no power save)
 
+#### Compile-time fresh-install defaults (`src/helpers/MQTTDefaults.h`)
+
+Optional PlatformIO `build_flags` override defaults written when `/mqtt_prefs` is first created. They do **not** change existing saved prefs on upgrade or reflash (unless `/mqtt_prefs` is erased).
+
+| Macro | Default | Notes |
+|-------|---------|-------|
+| `MQTT_DEFAULT_SLOT1_PRESET` … `MQTT_DEFAULT_SLOT6_PRESET` | slots 1–2: `analyzer-us` / `analyzer-eu`; slots 3–6: `none` | Must be a built-in preset name, `none`, or `custom` |
+| `MQTT_DEFAULT_IATA` | (empty) | e.g. `'"YYZ"'` |
+| `MQTT_DEFAULT_TIMEZONE` | (empty) | e.g. `'"America/Toronto"'` |
+| `MQTT_DEFAULT_TIMEZONE_OFFSET` | `0` | Fallback hours when TZ string is empty |
+
+Example community build:
+
+```ini
+build_flags =
+  -D MQTT_DEFAULT_SLOT1_PRESET='"meshcore-ca-1"'
+  -D MQTT_DEFAULT_SLOT2_PRESET='"meshcore-ca-2"'
+  -D MQTT_DEFAULT_IATA='"YYZ"'
+  -D MQTT_DEFAULT_TIMEZONE='"America/Toronto"'
+  -D MQTT_DEFAULT_TIMEZONE_OFFSET=-5
+```
+
+WiFi SSID/password are not compile-time configurable (operators set them per device via CLI).
+
+Legacy `get mqtt.analyzer_us` / `set mqtt.analyzer_us` still refer to the preset name `analyzer-us`, not “whatever slot 1 default is”.
+
 ## Default Configuration
 
-The MQTT bridge comes with the following defaults for fresh installs:
+The MQTT bridge comes with the following defaults for fresh installs (unless overridden by the macros above):
 - **Origin**: Device name (set automatically from `set name`)
-- **IATA**: (blank — must be configured for MeshCore-style topic presets such as Analyzer and TennMesh)
+- **IATA**: (blank — must be configured for MeshCore-style topic presets such as Analyzer and TennMesh, unless `MQTT_DEFAULT_IATA` is set at build time)
 - **Status Messages**: Enabled
 - **Packet Messages**: Enabled
 - **Raw Messages**: Disabled
@@ -224,8 +252,8 @@ The MQTT bridge comes with the following defaults for fresh installs:
 - **WiFi SSID**: (blank — must be configured)
 - **WiFi Password**: (blank — optional for open networks)
 - **WiFi Power Save**: `none` (no power save)
-- **Timezone**: (blank — uses UTC until configured)
-- **Timezone Offset**: 0 (fallback, no offset)
+- **Timezone**: (blank — uses UTC until configured, unless `MQTT_DEFAULT_TIMEZONE` is set at build time)
+- **Timezone Offset**: 0 (fallback, no offset, unless `MQTT_DEFAULT_TIMEZONE_OFFSET` is set)
 - **Repeat (forwarding)**: On (set `repeat off` for receive-only observers)
 
 ## CLI Commands

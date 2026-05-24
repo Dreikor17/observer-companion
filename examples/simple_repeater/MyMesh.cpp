@@ -979,28 +979,12 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   _prefs.gps_interval = 0;
   _prefs.advert_loc_policy = ADVERT_LOC_PREFS;
 
-  // MQTT defaults (mqtt_origin empty => effective origin follows node_name at publish time)
+  // MQTT slot/IATA/timezone defaults come from /mqtt_prefs via loadPrefs (see MQTTDefaults.h)
   _prefs.mqtt_origin[0] = '\0';
-  StrHelper::strncpy(_prefs.mqtt_iata, "SEA", sizeof(_prefs.mqtt_iata));
-  _prefs.mqtt_status_enabled = 1;    // enabled
-  _prefs.mqtt_packets_enabled = 1;   // enabled
-  _prefs.mqtt_raw_enabled = 0;       // disabled
-  _prefs.mqtt_tx_enabled = 2;        // advert: own adverts only (matches MQTTPrefs default)
-  _prefs.mqtt_rx_enabled = 1;        // RX packets enabled by default
-  _prefs.mqtt_status_interval = 300000; // 5 minutes
 
-  // WiFi defaults
+  // WiFi defaults (user-configured via CLI; placeholders until set)
   StrHelper::strncpy(_prefs.wifi_ssid, "ssid_here", sizeof(_prefs.wifi_ssid));
   StrHelper::strncpy(_prefs.wifi_password, "password_here", sizeof(_prefs.wifi_password));
-
-  // Timezone defaults (Pacific Time with DST support)
-  StrHelper::strncpy(_prefs.timezone_string, "America/Los_Angeles", sizeof(_prefs.timezone_string));
-  _prefs.timezone_offset = -8; // fallback
-
-  // MQTT slot presets (analyzer-us and analyzer-eu enabled by default)
-  StrHelper::strncpy(_prefs.mqtt_slot_preset[0], "analyzer-us", sizeof(_prefs.mqtt_slot_preset[0]));
-  StrHelper::strncpy(_prefs.mqtt_slot_preset[1], "analyzer-eu", sizeof(_prefs.mqtt_slot_preset[1]));
-  StrHelper::strncpy(_prefs.mqtt_slot_preset[2], "none", sizeof(_prefs.mqtt_slot_preset[2]));
 
   _prefs.adc_multiplier = 0.0f; // 0.0f means use default board multiplier
 
