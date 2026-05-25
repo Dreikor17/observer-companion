@@ -2528,7 +2528,7 @@ bool MQTTBridge::publishPacket(mesh::Packet* packet, bool is_tx,
       raw_data, raw_len, packet, is_tx, _origin, origin_id,
       snr, rssi, _timezone, active_buffer, active_buffer_size
     );
-  } else if (_last_raw_data && _last_raw_len > 0 && (millis() - _last_raw_timestamp) < 1000) {
+  } else if (!is_tx && _last_raw_data && _last_raw_len > 0 && (millis() - _last_raw_timestamp) < 1000) {
     len = MQTTMessageBuilder::buildPacketJSONFromRaw(
       _packet_json_doc,
       _last_raw_data, _last_raw_len, packet, is_tx, _origin, origin_id,
@@ -2653,6 +2653,14 @@ void MQTTBridge::queuePacket(mesh::Packet* packet, bool is_tx) {
     queued.snr          = _staged_snr;
     queued.rssi         = _staged_rssi;
     _staged_raw_valid   = false;  // consumed; cleared before xQueueSend
+  } else if (is_tx) {
+    // For TX packets, snapshot the exact serialized wire bytes at enqueue time so
+    // publishPacket() can use the direct raw-data path (not reconstruction fallback).
+    uint8_t tx_len = packet->writeTo(queued.raw_data);
+    if (tx_len > 0) {
+      queued.raw_len = tx_len;
+      queued.has_raw_data = true;
+    }
   }
 
   // Try to send to queue (non-blocking)
@@ -2698,6 +2706,13 @@ void MQTTBridge::queuePacket(mesh::Packet* packet, bool is_tx) {
     queued.snr          = _staged_snr;
     queued.rssi         = _staged_rssi;
     _staged_raw_valid   = false;
+  } else if (is_tx) {
+    // Mirror ESP32 path: persist serialized TX bytes directly in queue entry.
+    uint8_t tx_len = packet->writeTo(queued.raw_data);
+    if (tx_len > 0) {
+      queued.raw_len = tx_len;
+      queued.has_raw_data = true;
+    }
   }
 
   _queue_tail = (_queue_tail + 1) % MAX_QUEUE_SIZE;
