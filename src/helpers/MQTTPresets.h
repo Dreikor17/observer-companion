@@ -36,9 +36,15 @@ struct MQTTPresetDef {
   unsigned long token_lifetime; // JWT token lifetime in seconds (0 = use default 86400)
   bool allow_retain;            // Whether the broker allows the MQTT retain flag
   uint16_t keepalive;           // MQTT keepalive in seconds (0 = library default 120s)
-  const char* userpass_username; // MQTT_AUTH_USERPASS: broker username; else nullptr
-  const char* userpass_password; // MQTT_AUTH_USERPASS: broker password; else nullptr
+  const char* userpass_username; // MQTT_AUTH_USERPASS: embedded username, or nullptr to use mqttN.username
+  const char* userpass_password; // MQTT_AUTH_USERPASS: embedded password, or nullptr to use mqttN.password
 };
+
+// True when preset uses MQTT_AUTH_USERPASS but credentials come from slot prefs (mqttN.username/password).
+static inline bool mqttPresetNeedsSlotCredentials(const MQTTPresetDef* preset) {
+  return preset && preset->auth_type == MQTT_AUTH_USERPASS &&
+         (!preset->userpass_username || !preset->userpass_password);
+}
 
 // Google Trust Services - GTS Root R4 (used by LetsMesh Analyzer)
 static const char GTS_ROOT_R4[] PROGMEM =
@@ -99,7 +105,7 @@ static const char ISRG_ROOT_X1[] PROGMEM =
     "-----END CERTIFICATE-----\n";
 
 // Number of built-in presets
-static const int MQTT_PRESET_COUNT = 17;
+static const int MQTT_PRESET_COUNT = 18;
 
 // Built-in preset definitions (stored in flash)
 static const MQTTPresetDef MQTT_PRESETS[MQTT_PRESET_COUNT] = {
@@ -121,6 +127,7 @@ static const MQTTPresetDef MQTT_PRESETS[MQTT_PRESET_COUNT] = {
     { "dutchmeshcore-2", "wss://collector2.dutchmeshcore.nl:443/mqtt", "collector2.dutchmeshcore.nl",     GTS_ROOT_R4,  MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
     { "meshcore-ca-1",   "wss://mqtt1.meshcore.ca:443/mqtt",          "mqtt1.meshcore.ca",               ISRG_ROOT_X1, MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
     { "meshcore-ca-2",   "wss://mqtt2.meshcore.ca:443/mqtt",          "mqtt2.meshcore.ca",               ISRG_ROOT_X1, MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
+    { "inwmesh",         "mqtts://scope.inwmesh.org:8883",            nullptr,                           ISRG_ROOT_X1,  MQTT_AUTH_USERPASS,  MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
 };
 
 // Find a preset by name, returns nullptr if not found

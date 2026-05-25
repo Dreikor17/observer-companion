@@ -544,6 +544,12 @@ void MQTTBridge::begin() {
         if (preset) {
           _slots[i].enabled = true;
           _slots[i].preset = preset;
+          if (mqttPresetNeedsSlotCredentials(preset)) {
+            strncpy(_slots[i].username, _prefs->mqtt_slot_username[i], sizeof(_slots[i].username) - 1);
+            _slots[i].username[sizeof(_slots[i].username) - 1] = '\0';
+            strncpy(_slots[i].password, _prefs->mqtt_slot_password[i], sizeof(_slots[i].password) - 1);
+            _slots[i].password[sizeof(_slots[i].password) - 1] = '\0';
+          }
         } else {
           MQTT_DEBUG_PRINTLN("MQTT%d: unknown preset '%s', disabling", i + 1, preset_name);
           _slots[i].enabled = false;
@@ -1143,9 +1149,12 @@ void MQTTBridge::setupSlot(int index) {
       if (slot.auth_token[0] != '\0') {
         slot.client->setCredentials(_jwt_username, slot.auth_token);
       }
-    } else if (slot.preset->auth_type == MQTT_AUTH_USERPASS &&
-               slot.preset->userpass_username && slot.preset->userpass_password) {
-      slot.client->setCredentials(slot.preset->userpass_username, slot.preset->userpass_password);
+    } else if (slot.preset->auth_type == MQTT_AUTH_USERPASS) {
+      if (slot.preset->userpass_username && slot.preset->userpass_password) {
+        slot.client->setCredentials(slot.preset->userpass_username, slot.preset->userpass_password);
+      } else if (strlen(slot.username) > 0) {
+        slot.client->setCredentials(slot.username, slot.password);
+      }
     }
   } else {
     // Custom broker slot — build persistent URI
@@ -1817,6 +1826,12 @@ void MQTTBridge::applySlotPreset(int slot_index, const char* preset_name) {
   if (preset) {
     slot.enabled = true;
     slot.preset = preset;
+    if (mqttPresetNeedsSlotCredentials(preset)) {
+      strncpy(slot.username, _prefs->mqtt_slot_username[slot_index], sizeof(slot.username) - 1);
+      slot.username[sizeof(slot.username) - 1] = '\0';
+      strncpy(slot.password, _prefs->mqtt_slot_password[slot_index], sizeof(slot.password) - 1);
+      slot.password[sizeof(slot.password) - 1] = '\0';
+    }
     if (_initialized) {
       char reason[80];
       if (!isSlotReady(slot_index, reason, sizeof(reason))) {
@@ -1964,6 +1979,16 @@ bool MQTTBridge::isSlotReady(int index, char* reason_buf, size_t reason_size) co
     } else if (slot.preset->topic_style == MQTT_TOPIC_MESHCORE) {
       if (!isIATAValid()) {
         if (reason_buf) snprintf(reason_buf, reason_size, "set mqtt.iata <airport_code>");
+        return false;
+      }
+    }
+    if (mqttPresetNeedsSlotCredentials(slot.preset)) {
+      if (_prefs->mqtt_slot_username[index][0] == '\0') {
+        if (reason_buf) snprintf(reason_buf, reason_size, "set mqtt%d.username <user>", index + 1);
+        return false;
+      }
+      if (_prefs->mqtt_slot_password[index][0] == '\0') {
+        if (reason_buf) snprintf(reason_buf, reason_size, "set mqtt%d.password <pass>", index + 1);
         return false;
       }
     }

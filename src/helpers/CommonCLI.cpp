@@ -1452,6 +1452,12 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
           } else if (p && p->topic_style == MQTT_TOPIC_MESHCORE &&
                      (strlen(_prefs->mqtt_iata) == 0 || strcmp(_prefs->mqtt_iata, "XXX") == 0)) {
             sprintf(reply, "OK - slot %d preset: %s (run 'set mqtt.iata <airport_code>' to publish)", slot + 1, preset_name);
+          } else if (p && mqttPresetNeedsSlotCredentials(p) &&
+                     (_prefs->mqtt_slot_username[slot][0] == '\0' ||
+                      _prefs->mqtt_slot_password[slot][0] == '\0')) {
+            sprintf(reply,
+                    "OK - slot %d preset: %s (run 'set mqtt%d.username <user>' and 'set mqtt%d.password <pass>' to connect)",
+                    slot + 1, preset_name, slot + 1, slot + 1);
           } else {
             sprintf(reply, "OK - slot %d preset: %s", slot + 1, preset_name);
           }
@@ -1475,10 +1481,12 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     } else if (memcmp(subcmd, "username ", 9) == 0) {
       StrHelper::strncpy(_prefs->mqtt_slot_username[slot], &subcmd[9], sizeof(_prefs->mqtt_slot_username[slot]));
       savePrefs();
+      _callbacks->restartBridgeSlot(slot);
       strcpy(reply, "OK");
     } else if (memcmp(subcmd, "password ", 9) == 0) {
       StrHelper::strncpy(_prefs->mqtt_slot_password[slot], &subcmd[9], sizeof(_prefs->mqtt_slot_password[slot]));
       savePrefs();
+      _callbacks->restartBridgeSlot(slot);
       strcpy(reply, "OK");
     } else if (memcmp(subcmd, "token ", 6) == 0) {
       StrHelper::strncpy(_prefs->mqtt_slot_token[slot], &subcmd[6], sizeof(_prefs->mqtt_slot_token[slot]));
