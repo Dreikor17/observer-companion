@@ -98,6 +98,7 @@ The MQTT bridge uses a slot-based architecture with up to 6 concurrent connectio
 |--------|--------|------|-----------|
 | `analyzer-us` | mqtt-us-v1.letsmesh.net:443 | JWT (Ed25519) | WSS |
 | `analyzer-eu` | mqtt-eu-v1.letsmesh.net:443 | JWT (Ed25519) | WSS |
+| `nz-analyzer` | meshcore-mqtt-1.baird.io:443 | JWT (Ed25519) | WSS |
 | `meshmapper` | mqtt.meshmapper.cc:443 | JWT (Ed25519) | WSS |
 | `meshrank` | meshrank.net:8883 | None (token in topic) | MQTT over TLS |
 | `waev` | mqtt.waev.app:443 | JWT (Ed25519) | WSS |
@@ -278,6 +279,7 @@ Each slot (1-6) supports the following commands:
 #### Set Commands
 - `set mqttN.preset analyzer-us` - Set slot N to LetsMesh Analyzer US
 - `set mqttN.preset analyzer-eu` - Set slot N to LetsMesh Analyzer EU
+- `set mqttN.preset nz-analyzer` - Set slot N to NZ Analyzer (Baird)
 - `set mqttN.preset meshmapper` - Set slot N to MeshMapper
 - `set mqttN.preset meshrank` - Set slot N to MeshRank (requires token)
 - `set mqttN.preset waev` - Set slot N to Waev

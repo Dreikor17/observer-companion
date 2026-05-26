@@ -356,7 +356,7 @@ public:
    * setup of new one.
    *
    * @param slot_index Slot index (0-2)
-   * @param preset_name Preset name: "analyzer-us", "analyzer-eu", "meshmapper", "custom", "none"
+   * @param preset_name Preset name: "analyzer-us", "analyzer-eu", "nz-analyzer", "meshmapper", "custom", "none"
    */
   void setSlotPreset(int slot_index, const char* preset_name);
   void applySlotPreset(int slot_index, const char* preset_name);
