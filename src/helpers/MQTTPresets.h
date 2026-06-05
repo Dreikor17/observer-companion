@@ -113,7 +113,7 @@ static const MQTTPresetDef MQTT_PRESETS[MQTT_PRESET_COUNT] = {
     { "analyzer-us",   "wss://mqtt-us-v1.letsmesh.net:443/mqtt",  "mqtt-us-v1.letsmesh.net",         GTS_ROOT_R4,   MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
     { "analyzer-eu",   "wss://mqtt-eu-v1.letsmesh.net:443/mqtt",  "mqtt-eu-v1.letsmesh.net",         GTS_ROOT_R4,   MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
     { "nz-analyzer",   "wss://meshcore-mqtt-1.baird.io:443",      "meshcore-mqtt-1.baird.io",        GTS_ROOT_R4,   MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
-    { "meshmapper",    "wss://mqtt.meshmapper.cc:443/mqtt",       "mqtt.meshmapper.cc",              ISRG_ROOT_X1,  MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
+    { "meshmapper",    "wss://mqtt.meshmapper.net:443/mqtt",       "mqtt.meshmapper.net",              ISRG_ROOT_X1,  MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
     { "meshrank",      "mqtts://meshrank.net:8883",               nullptr,                           ISRG_ROOT_X1,  MQTT_AUTH_NONE,     MQTT_TOPIC_MESHRANK,  0,       false,  0,       nullptr,     nullptr     },
     { "waev",          "wss://mqtt.waev.app:443/mqtt",            "mqtt.waev.app",                   GTS_ROOT_R4,   MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE, 3300,     false,  55,      nullptr,     nullptr     },
     { "meshomatic",    "wss://us-east.meshomatic.net:443/mqtt",   "us-east.meshomatic.net",          ISRG_ROOT_X1,  MQTT_AUTH_JWT,      MQTT_TOPIC_MESHCORE,  0,       true,   55,      nullptr,     nullptr     },
