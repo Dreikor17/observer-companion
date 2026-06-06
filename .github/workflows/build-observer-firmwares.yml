@@ -56,6 +56,23 @@ jobs:
       - name: Clone Repo
         uses: actions/checkout@v4
 
+      # Cache the installed PlatformIO platforms + toolchains (the espressif32
+      # toolchain + Arduino framework are pinned in platformio.ini, so they are
+      # identical across commits). This skips the multi-hundred-MB download AND
+      # re-extraction that otherwise happens on every fresh runner's first build.
+      # Note: compiled objects are not worth caching here because build.sh injects
+      # a changing -DFIRMWARE_VERSION/-DFIRMWARE_BUILD_DATE into the global build
+      # flags, which busts every object's compile-command checksum each build.
+      - name: Cache PlatformIO Toolchains
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: pio-toolchains-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-toolchains-${{ runner.os }}-
+
       - name: Setup Build Environment
         uses: ./.github/actions/setup-build-environment
 
