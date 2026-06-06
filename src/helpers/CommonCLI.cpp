@@ -276,10 +276,29 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
       remaining -= to_read;
     }
     file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    file.read((uint8_t *)&_prefs->snmp_enabled, sizeof(_prefs->snmp_enabled));                    // 291
-    file.read((uint8_t *)&_prefs->snmp_community, sizeof(_prefs->snmp_community));                // 292
+    {
+      // Tail layout (current): 291-292 flood_max_*, 293+ snmp/alert fields.
+      // Legacy flex-branch files stored snmp at 291 without flood_max_* fields.
+      uint8_t byte291, byte292;
+      file.read(&byte291, 1);
+      file.read(&byte292, 1);
+      if (byte291 <= 1 && byte292 > 64) {
+        _prefs->snmp_enabled = byte291;
+        _prefs->snmp_community[0] = (char)byte292;
+        file.read((uint8_t *)&_prefs->snmp_community[1], sizeof(_prefs->snmp_community) - 1);
+      } else {
+        _prefs->flood_max_unscoped = byte291;
+        _prefs->flood_max_advert = byte292;
+        if (file.available() >= (int)sizeof(_prefs->snmp_enabled)) {
+          file.read((uint8_t *)&_prefs->snmp_enabled, sizeof(_prefs->snmp_enabled));              // 293
+        }
+        if (file.available() >= (int)sizeof(_prefs->snmp_community)) {
+          file.read((uint8_t *)&_prefs->snmp_community, sizeof(_prefs->snmp_community));            // 294
+        }
+      }
+    }
     if (file.available() >= (int)sizeof(_prefs->radio_watchdog_minutes)) {
-      file.read((uint8_t *)&_prefs->radio_watchdog_minutes, sizeof(_prefs->radio_watchdog_minutes)); // 316
+      file.read((uint8_t *)&_prefs->radio_watchdog_minutes, sizeof(_prefs->radio_watchdog_minutes)); // 318
     }
     // Alert channel fields (appended; older files won't have them — defaults from MyMesh ctor remain)
     if (file.available() >= (int)sizeof(_prefs->alert_enabled)) {
@@ -304,6 +323,7 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
       file.read((uint8_t *)&_prefs->alert_region, sizeof(_prefs->alert_region));
     }
     // ensure null termination after raw read
+    _prefs->snmp_community[sizeof(_prefs->snmp_community) - 1] = '\0';
     _prefs->alert_psk_hex[sizeof(_prefs->alert_psk_hex) - 1] = '\0';
     _prefs->alert_hashtag[sizeof(_prefs->alert_hashtag) - 1] = '\0';
     _prefs->alert_region[sizeof(_prefs->alert_region) - 1] = '\0';
@@ -426,9 +446,11 @@ void CommonCLI::savePrefs(FILESYSTEM* fs) {
       remaining -= to_write;
     }
     file.write((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    file.write((uint8_t *)&_prefs->snmp_enabled, sizeof(_prefs->snmp_enabled));                    // 291
-    file.write((uint8_t *)&_prefs->snmp_community, sizeof(_prefs->snmp_community));                // 292
-    file.write((uint8_t *)&_prefs->radio_watchdog_minutes, sizeof(_prefs->radio_watchdog_minutes)); // 316
+    file.write((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));   // 291
+    file.write((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));       // 292
+    file.write((uint8_t *)&_prefs->snmp_enabled, sizeof(_prefs->snmp_enabled));                    // 293
+    file.write((uint8_t *)&_prefs->snmp_community, sizeof(_prefs->snmp_community));                // 294
+    file.write((uint8_t *)&_prefs->radio_watchdog_minutes, sizeof(_prefs->radio_watchdog_minutes)); // 318
     // Alert channel fields (appended)
     file.write((uint8_t *)&_prefs->alert_enabled, sizeof(_prefs->alert_enabled));
     file.write((uint8_t *)&_prefs->alert_psk_hex, sizeof(_prefs->alert_psk_hex));
@@ -977,13 +999,23 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
       }
 #endif
     } else if (memcmp(command, "powersaving on", 14) == 0) {
+#if defined(NRF52_PLATFORM)
       _prefs->powersaving_enabled = 1;
       savePrefs();
-      strcpy(reply, "ok"); // TODO: to return Not supported if required
+      strcpy(reply, "on - Immediate effect");
+#elif defined(ESP32) && !defined(WITH_BRIDGE)
+      _prefs->powersaving_enabled = 1;
+      savePrefs();
+      strcpy(reply, "on - After 2 minutes");
+#elif defined(WITH_BRIDGE)
+      strcpy(reply, "Bridge not supported");
+#else
+      strcpy(reply, "Board not supported");
+#endif
     } else if (memcmp(command, "powersaving off", 15) == 0) {
       _prefs->powersaving_enabled = 0;
       savePrefs();
-      strcpy(reply, "ok");
+      strcpy(reply, "off");
     } else if (memcmp(command, "powersaving", 11) == 0) {
       if (_prefs->powersaving_enabled) {
         strcpy(reply, "on");
@@ -1122,7 +1154,7 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     _prefs->disable_fwd = memcmp(&config[7], "off", 3) == 0;
     savePrefs();
     strcpy(reply, _prefs->disable_fwd ? "OK - repeat is now OFF" : "OK - repeat is now ON");
-#if defined(USE_SX1262) || defined(USE_SX1268)
+#if defined(USE_SX1262) || defined(USE_SX1268) || defined(USE_LR1110)
   } else if (memcmp(config, "radio.rxgain ", 13) == 0) {
     _prefs->rx_boosted_gain = memcmp(&config[13], "on", 2) == 0;
     strcpy(reply, "OK");
@@ -1172,6 +1204,24 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
       strcpy(reply, "OK");
     } else {
       strcpy(reply, "Error, must be 0-2");
+    }
+  } else if (memcmp(config, "flood.max.unscoped ", 19) == 0) {
+    uint8_t m = atoi(&config[19]);
+    if (m <= 64) {
+      _prefs->flood_max_unscoped = m;
+      savePrefs();
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Error, max 64");
+    } 
+  } else if (memcmp(config, "flood.max.advert ", 17) == 0) {
+    uint8_t m = atoi(&config[17]);
+    if (m <= 64) {
+      _prefs->flood_max_advert = m;
+      savePrefs();
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Error, max 64");
     }
   } else if (memcmp(config, "flood.max ", 10) == 0) {
     uint8_t m = atoi(&config[10]);
@@ -1791,7 +1841,7 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->node_lat));
   } else if (memcmp(config, "lon", 3) == 0) {
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->node_lon));
-#if defined(USE_SX1262) || defined(USE_SX1268)
+#if defined(USE_SX1262) || defined(USE_SX1268) || defined(USE_LR1110)
   } else if (memcmp(config, "radio.rxgain", 12) == 0) {
     sprintf(reply, "> %s", _prefs->rx_boosted_gain ? "on" : "off");
 #endif
@@ -1804,6 +1854,10 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->rx_delay_base));
   } else if (memcmp(config, "txdelay", 7) == 0) {
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->tx_delay_factor));
+  } else if (memcmp(config, "flood.max.advert", 16) == 0) {
+    sprintf(reply, "> %d", (uint32_t)_prefs->flood_max_advert);
+  } else if (memcmp(config, "flood.max.unscoped", 18) == 0) {
+    sprintf(reply, "> %d", (uint32_t)_prefs->flood_max_unscoped);
   } else if (memcmp(config, "flood.max", 9) == 0) {
     sprintf(reply, "> %d", (uint32_t)_prefs->flood_max);
   } else if (memcmp(config, "direct.txdelay", 14) == 0) {
