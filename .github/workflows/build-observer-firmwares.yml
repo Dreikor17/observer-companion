@@ -32,7 +32,7 @@ jobs:
         id: split
         shell: bash
         run: |
-          SHARDS=4
+          SHARDS=14
           ENVS=$(grep -rhoE '^\[env:[^]]*observer_mqtt\]' platformio.ini variants/*/platformio.ini \
                  | sed -E 's/^\[env:(.*)\]$/\1/' | sort -u)
           echo "Discovered envs:"; echo "$ENVS"
