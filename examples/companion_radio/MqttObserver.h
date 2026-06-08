@@ -40,7 +40,8 @@ void begin(mesh::Dispatcher* dispatcher,
            mesh::LocalIdentity* identity,
            const char* node_name,
            const char* firmware_version,
-           const char* build_date);
+           const char* build_date,
+           float radio_freq, float radio_bw, uint8_t radio_sf, uint8_t radio_cr);
 
 // Pump the bridge. No-op on ESP32 (the bridge runs its own FreeRTOS task there).
 void loop();

@@ -39,7 +39,8 @@ void begin(mesh::Dispatcher* dispatcher,
            mesh::LocalIdentity* identity,
            const char* node_name,
            const char* firmware_version,
-           const char* build_date) {
+           const char* build_date,
+           float radio_freq, float radio_bw, uint8_t radio_sf, uint8_t radio_cr) {
   if (s_bridge) return;  // already started
 
   memset(&s_prefs, 0, sizeof(s_prefs));
@@ -48,6 +49,14 @@ void begin(mesh::Dispatcher* dispatcher,
   if (node_name) {
     strncpy(s_prefs.node_name, node_name, sizeof(s_prefs.node_name) - 1);
   }
+
+  // Radio params feed the status message's radio_info ("freq,bw,sf,cr").
+  // The bridge reads these from prefs; the companion's real values live in its
+  // own NodePrefs, so they must be copied in here (otherwise they publish as 0).
+  s_prefs.freq = radio_freq;
+  s_prefs.bw   = radio_bw;
+  s_prefs.sf   = radio_sf;
+  s_prefs.cr   = radio_cr;
 
   // Message defaults (mirror applyMQTTDefaults() in MQTTDefaults.h).
   s_prefs.mqtt_status_enabled  = 1;

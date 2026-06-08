@@ -987,7 +987,8 @@ void MyMesh::begin(bool has_display) {
   // Observer Companion: start the MQTT uplink. Owns the WiFi STA; no-op unless
   // OBSERVER_WIFI_SSID was baked in at build time (otherwise acts as a plain companion).
   MqttObserver::begin(this, _radio, &board, _ms, getRTCClock(), _mgr, &self_id,
-                      _prefs.node_name, FIRMWARE_VERSION, FIRMWARE_BUILD_DATE);
+                      _prefs.node_name, FIRMWARE_VERSION, FIRMWARE_BUILD_DATE,
+                      _prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
 #endif
 }
 
