@@ -191,6 +191,14 @@ void setup() {
 #elif defined(ESP32)
   SPIFFS.begin(true);
   store.begin();
+#if defined(OBSERVER_WIFI_COMPANION)
+  // Bring up the TCP/IP stack on the main thread BEFORE the MQTT bridge task and
+  // the TCP server touch it. The bridge still owns the WiFi connect/reconnect (from
+  // its own task); this only initializes the stack so SerialWifiInterface's
+  // WiFiServer.begin() is valid. Without it, lwIP asserts "Invalid mbox" (the TCP
+  // server starts before WiFi init runs in the bridge task) and the device reset-loops.
+  WiFi.mode(WIFI_STA);
+#endif
   the_mesh.begin(
     #ifdef DISPLAY_CLASS
         disp != NULL
