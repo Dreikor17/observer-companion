@@ -118,6 +118,20 @@ bool isRunning() {
   return s_bridge != nullptr;
 }
 
+void getStatusLine(char* buf, size_t buf_size) {
+  if (buf_size == 0) return;
+  if (!s_bridge) {
+    strncpy(buf, "MQTT: off", buf_size);
+  } else if (WiFi.status() != WL_CONNECTED) {
+    strncpy(buf, "WiFi: connecting", buf_size);
+  } else {
+    IPAddress ip = WiFi.localIP();
+    snprintf(buf, buf_size, "%u.%u.%u.%u  MQTT:%d",
+             ip[0], ip[1], ip[2], ip[3], s_bridge->getConnectedBrokers());
+  }
+  buf[buf_size - 1] = '\0';
+}
+
 } // namespace MqttObserver
 
 #endif // WITH_MQTT_BRIDGE

@@ -1,6 +1,7 @@
 #include "UITask.h"
 #include <helpers/TxtDataHelpers.h>
 #include "../MyMesh.h"
+#include "../MqttObserver.h"
 #include "target.h"
 #ifdef WIFI_SSID
   #include <WiFi.h>
@@ -220,6 +221,13 @@ public:
       #ifdef WIFI_SSID
         IPAddress ip = WiFi.localIP();
         snprintf(tmp, sizeof(tmp), "IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+        display.setTextSize(1);
+        display.drawTextCentered(display.width() / 2, 54, tmp);
+      #endif
+      #ifdef WITH_MQTT_BRIDGE
+        // Observer Companion: one-line IP + MQTT broker status.
+        MqttObserver::getStatusLine(tmp, sizeof(tmp));
+        display.setColor(DisplayDriver::YELLOW);
         display.setTextSize(1);
         display.drawTextCentered(display.width() / 2, 54, tmp);
       #endif

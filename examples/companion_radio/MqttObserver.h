@@ -11,6 +11,7 @@
 
 #ifdef WITH_MQTT_BRIDGE
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace mesh {
@@ -53,6 +54,12 @@ void onTx(mesh::Packet* pkt);
 
 // True once the bridge has been constructed and started.
 bool isRunning();
+
+// Fill buf with a one-line status string for the display:
+//   "MQTT: off"         — uplink not started (no WiFi creds baked in)
+//   "WiFi: connecting"  — joining WiFi, no IP yet
+//   "<ip>  MQTT:<n>"    — connected; n = brokers currently connected
+void getStatusLine(char* buf, size_t buf_size);
 
 } // namespace MqttObserver
 
