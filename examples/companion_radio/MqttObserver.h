@@ -1,6 +1,6 @@
 #pragma once
 
-// Companion Observer — MQTT uplink glue for the companion firmware.
+// Observer Companion — MQTT uplink glue for the companion firmware.
 //
 // This header is deliberately thin: it forward-declares only core mesh:: types
 // and exposes a tiny C++ API. It MUST NOT include CommonCLI.h / MQTTBridge.h,

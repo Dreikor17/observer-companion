@@ -1,8 +1,8 @@
-# MeshCore - Companion Observer
+# MeshCore - Observer Companion
 
 **MeshCore companion firmware that also uplinks the packets it hears to MQTT over WiFi.**
 
-Companion Observer is a fork of [MeshCore](https://github.com/meshcore-dev/MeshCore) that brings
+Observer Companion is a fork of [MeshCore](https://github.com/meshcore-dev/MeshCore) that brings
 the MQTT "observer" uplink — originally built by [agessaman](https://github.com/agessaman/MeshCore)
 for the repeater and room-server roles — onto the **companion radio** firmware. The result is a
 single device that behaves as a normal MeshCore companion (pair it with the phone/web app) *and*
@@ -116,7 +116,7 @@ See **[ROADMAP.md](ROADMAP.md)**.
 - **[agessaman/MeshCore](https://github.com/agessaman/MeshCore)** (`mqtt-bridge-implementation-flex`)
   — the MQTT observer/bridge implementation that this project builds on.
 
-Companion Observer only adds the companion-role integration, build target, and packaging on top of
+Observer Companion only adds the companion-role integration, build target, and packaging on top of
 their work. Please support the upstream projects and the broader MeshCore community.
 
 ## License

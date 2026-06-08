@@ -225,7 +225,7 @@ public:
         display.drawTextCentered(display.width() / 2, 54, tmp);
       #endif
       #ifdef WITH_MQTT_BRIDGE
-        // Companion Observer: one-line IP + MQTT broker status.
+        // Observer Companion: one-line IP + MQTT broker status.
         MqttObserver::getStatusLine(tmp, sizeof(tmp));
         display.setColor(DisplayDriver::YELLOW);
         display.setTextSize(1);

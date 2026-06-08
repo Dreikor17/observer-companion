@@ -1,4 +1,4 @@
-# MeshCore - Companion Observer — Roadmap
+# MeshCore - Observer Companion — Roadmap
 
 Rough, unordered list of where this fork is headed. Contributions welcome.
 
