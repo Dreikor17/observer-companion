@@ -2,6 +2,7 @@
 
 #include <Arduino.h> // needed for PlatformIO
 #include <Mesh.h>
+#include "MqttObserver.h"
 
 #define CMD_APP_START                 1
 #define CMD_SEND_TXT_MSG              2
@@ -281,6 +282,11 @@ uint8_t MyMesh::getExtraAckTransmitCount() const {
 }
 
 void MyMesh::logRxRaw(float snr, float rssi, const uint8_t raw[], int len) {
+#ifdef WITH_MQTT_BRIDGE
+  // Stage the raw radio bytes for the MQTT uplink. Must run before logRx()
+  // (the dispatcher calls logRxRaw -> logRx), and regardless of app connection.
+  MqttObserver::onRxRaw(snr, rssi, raw, len);
+#endif
   if (_serial->isConnected() && len + 3 <= MAX_FRAME_SIZE) {
     int i = 0;
     out_frame[i++] = PUSH_CODE_LOG_RX_DATA;
@@ -292,6 +298,16 @@ void MyMesh::logRxRaw(float snr, float rssi, const uint8_t raw[], int len) {
     _serial->writeFrame(out_frame, i);
   }
 }
+
+#ifdef WITH_MQTT_BRIDGE
+void MyMesh::logRx(mesh::Packet* pkt, int len, float score) {
+  MqttObserver::onRx(pkt);
+}
+
+void MyMesh::logTx(mesh::Packet* pkt, int len) {
+  MqttObserver::onTx(pkt);
+}
+#endif
 
 bool MyMesh::isAutoAddEnabled() const {
   return (_prefs.manual_add_contacts & 1) == 0;
@@ -966,6 +982,13 @@ void MyMesh::begin(bool has_display) {
   radio_driver.setRxBoostedGainMode(_prefs.rx_boosted_gain);
   MESH_DEBUG_PRINTLN("RX Boosted Gain Mode: %s",
                      radio_driver.getRxBoostedGainMode() ? "Enabled" : "Disabled");
+
+#ifdef WITH_MQTT_BRIDGE
+  // Observer Companion: start the MQTT uplink. Owns the WiFi STA; no-op unless
+  // OBSERVER_WIFI_SSID was baked in at build time (otherwise acts as a plain companion).
+  MqttObserver::begin(this, _radio, &board, _ms, getRTCClock(), _mgr, &self_id,
+                      _prefs.node_name, FIRMWARE_VERSION, FIRMWARE_BUILD_DATE);
+#endif
 }
 
 const char *MyMesh::getNodeName() {
@@ -2216,6 +2239,10 @@ void MyMesh::checkSerialInterface() {
 void MyMesh::loop() {
   BaseChatMesh::loop();
 
+#ifdef WITH_MQTT_BRIDGE
+  MqttObserver::loop();  // no-op on ESP32 (bridge runs its own task)
+#endif
+
   if (_cli_rescue) {
     checkCLIRescueCmd();
   } else {
@@ -2250,5 +2277,5 @@ bool MyMesh::advert() {
 
 // To check if there is pending work
 bool MyMesh::hasPendingWork() const {
-  return _mgr->getOutboundTotal() > 0 || dirty_contacts_expiry != 0;
+  return _mgr->getOutboundCount(_ms->getMillis()) > 0 || dirty_contacts_expiry != 0;
 }

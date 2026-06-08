@@ -117,6 +117,11 @@ protected:
   void sendFloodScoped(const mesh::GroupChannel& channel, mesh::Packet* pkt, uint32_t delay_millis=0) override;
 
   void logRxRaw(float snr, float rssi, const uint8_t raw[], int len) override;
+#ifdef WITH_MQTT_BRIDGE
+  // Observer Companion: feed RX/TX packets to the MQTT uplink (see MqttObserver).
+  void logRx(mesh::Packet* pkt, int len, float score) override;
+  void logTx(mesh::Packet* pkt, int len) override;
+#endif
   bool isAutoAddEnabled() const override;
   bool shouldAutoAddContactType(uint8_t type) const override;
   bool shouldOverwriteWhenFull() const override;

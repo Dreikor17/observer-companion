@@ -1,0 +1,54 @@
+name: Build Companion Observer
+
+# Fast per-push verification of the Observer Companion firmware (companion radio
+# + MQTT uplink). The full *_observer_mqtt fleet is built manually via
+# build-observer-firmwares.yml.
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'examples/companion_radio/**'
+      - 'src/**'
+      - 'variants/heltec_v3/platformio.ini'
+      - 'platformio.ini'
+      - '.github/workflows/build-companion-observer.yml'
+
+env:
+  FIRMWARE_VERSION: v1.16.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Repo
+        uses: actions/checkout@v4
+
+      # Cache the installed PlatformIO platforms + toolchains (pinned in
+      # platformio.ini), skipping the multi-hundred-MB download on fresh runners.
+      - name: Cache PlatformIO Toolchains
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: pio-toolchains-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-toolchains-${{ runner.os }}-
+
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+
+      - name: Build companion observer (Heltec V3)
+        run: /usr/bin/env bash build.sh build-firmware Heltec_v3_companion_radio_observer_mqtt
+
+      - name: Upload Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: companion-observer-heltec-v3
+          path: out
+          if-no-files-found: error
