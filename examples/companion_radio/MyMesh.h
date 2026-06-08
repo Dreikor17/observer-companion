@@ -118,7 +118,7 @@ protected:
 
   void logRxRaw(float snr, float rssi, const uint8_t raw[], int len) override;
 #ifdef WITH_MQTT_BRIDGE
-  // Observer Companion: feed RX/TX packets to the MQTT uplink (see MqttObserver).
+  // Companion Observer: feed RX/TX packets to the MQTT uplink (see MqttObserver).
   void logRx(mesh::Packet* pkt, int len, float score) override;
   void logTx(mesh::Packet* pkt, int len) override;
 #endif

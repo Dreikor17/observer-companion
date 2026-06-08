@@ -1,6 +1,6 @@
 name: Build Companion Observer
 
-# Fast per-push verification of the Observer Companion firmware (companion radio
+# Fast per-push verification of the Companion Observer firmware (companion radio
 # + MQTT uplink). The full *_observer_mqtt fleet is built manually via
 # build-observer-firmwares.yml.
 

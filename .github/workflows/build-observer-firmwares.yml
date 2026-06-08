@@ -119,7 +119,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: Observer Companion Firmwares (${{ steps.sha.outputs.short }})
+          name: Companion Observer Firmwares (${{ steps.sha.outputs.short }})
           body: "Rolling build of all *_observer_mqtt firmwares at ${{ steps.sha.outputs.short }}."
           prerelease: true
           files: out/*
