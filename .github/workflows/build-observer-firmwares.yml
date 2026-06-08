@@ -1,17 +1,17 @@
-name: Build MQTT Observer Firmwares
+name: Build Observer Firmwares (full fleet)
+
+# Heavy build of every *_observer_mqtt env (repeater, room server, and the
+# companion observer). Manual-only — pushes are verified by the lighter
+# build-companion-observer.yml. Run from the Actions tab when cutting a release.
 
 permissions:
   contents: write
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - mqtt-bridge-implementation-flex
 
 env:
-  # Version embedded in firmware filenames; must match the version key in the
-  # flasher's config.json. Bump here when the observer version changes.
+  # Version embedded in firmware filenames.
   FIRMWARE_VERSION: v1.16.0
   # Rolling release tag that hosts the latest observer binaries.
   RELEASE_TAG: observer-mqtt-latest
@@ -119,32 +119,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: MQTT Observer Firmwares (${{ steps.sha.outputs.short }})
+          name: Observer Companion Firmwares (${{ steps.sha.outputs.short }})
           body: "Rolling build of all *_observer_mqtt firmwares at ${{ steps.sha.outputs.short }}."
           prerelease: true
           files: out/*
-
-      - name: Checkout Flasher Repo
-        uses: actions/checkout@v4
-        with:
-          repository: agessaman/flasher.meshcore.io
-          token: ${{ secrets.FLASHER_DISPATCH_TOKEN }}
-          path: flasher
-
-      - name: Update Flasher Config
-        run: |
-          python3 flasher/scripts/update-firmware.py \
-            "${{ steps.sha.outputs.short }}" \
-            "$GITHUB_WORKSPACE/firmware-notes.html"
-
-      - name: Commit & Push Flasher Config
-        working-directory: flasher
-        run: |
-          if git diff --quiet; then
-            echo "No flasher changes to commit."
-            exit 0
-          fi
-          git config user.name "meshcore-bot"
-          git config user.email "noreply@gessaman.com"
-          git commit -am "Update observer firmware to ${{ steps.sha.outputs.short }}"
-          git push

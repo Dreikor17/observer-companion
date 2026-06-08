@@ -1,130 +1,124 @@
-## About MeshCore
+# Observer Companion
 
-MeshCore is a lightweight, portable C++ library that enables multi-hop packet routing for embedded projects using LoRa and other packet radios. It is designed for developers who want to create resilient, decentralized communication networks that work without the internet.
+**MeshCore companion firmware that also uplinks the packets it hears to MQTT over WiFi.**
 
-## 🔍 What is MeshCore?
+Observer Companion is a fork of [MeshCore](https://github.com/meshcore-dev/MeshCore) that brings
+the MQTT "observer" uplink — originally built by [agessaman](https://github.com/agessaman/MeshCore)
+for the repeater and room-server roles — onto the **companion radio** firmware. The result is a
+single device that behaves as a normal MeshCore companion (pair it with the phone/web app) *and*
+publishes every mesh packet it receives to one or more MQTT brokers (LetsMesh, MeshMapper, and the
+other community map/analyzer services) for monitoring and mapping.
 
-MeshCore now supports a range of LoRa devices, allowing for easy flashing without the need to compile firmware manually. Users can flash a pre-built binary using tools like Adafruit ESPTool and interact with the network through a serial console.
-MeshCore provides the ability to create wireless mesh networks, similar to Meshtastic and Reticulum but with a focus on lightweight multi-hop packet routing for embedded projects. Unlike Meshtastic, which is tailored for casual LoRa communication, or Reticulum, which offers advanced networking, MeshCore balances simplicity with scalability, making it ideal for custom embedded solutions, where devices (nodes) can communicate over long distances by relaying messages through intermediate nodes. This is especially useful in off-grid, emergency, or tactical situations where traditional communication infrastructure is unavailable.
+WiFi station mode is already part of MeshCore; this project wires the MQTT bridge into the companion
+build and lets it own the WiFi connection for the uplink.
 
-> **MQTT Observer Setup** — If you're deploying an observer node with MQTT, see the [MQTT Implementation Guide](./MQTT_IMPLEMENTATION.md) for configuration, CLI commands, and troubleshooting.
+---
 
-## ⚡ Key Features
+## Status
 
-* Multi-Hop Packet Routing
-  * Devices can forward messages across multiple nodes, extending range beyond a single radio's reach.
-  * Supports up to a configurable number of hops to balance network efficiency and prevent excessive traffic.
-  * Nodes use fixed roles where "Companion" nodes are not repeating messages at all to prevent adverse routing paths from being used.
-* Supports LoRa Radios – Works with Heltec, RAK Wireless, and other LoRa-based hardware.
-* Decentralized & Resilient – No central server or internet required; the network is self-healing.
-* Low Power Consumption – Ideal for battery-powered or solar-powered devices.
-* Simple to Deploy – Pre-built example applications make it easy to get started.
+This is an early, working MVP focused on one board (Heltec WiFi LoRa 32 V3):
 
-## 🎯 What Can You Use MeshCore For?
+- ✅ New build target `Heltec_v3_companion_radio_observer_mqtt` — a USB companion + MQTT uplink.
+- ✅ Heard packets (`logRx`) and self-originated adverts (`logTx`), plus raw radio data, are fed to
+  the MQTT bridge and published using the same slot/preset system as the repeater observer.
+- ✅ Config is supplied at **build time** (WiFi credentials + broker presets via build flags).
+- 🚧 Runtime configuration on the companion (via the app, no reflash) is on the [roadmap](ROADMAP.md).
+- 🚧 More boards, and a BLE-companion variant, are on the [roadmap](ROADMAP.md).
 
-* Off-Grid Communication: Stay connected even in remote areas.
-* Emergency Response & Disaster Recovery: Set up instant networks where infrastructure is down.
-* Outdoor Activities: Hiking, camping, and adventure racing communication.
-* Tactical & Security Applications: Military, law enforcement, and private security use cases.
-* IoT & Sensor Networks: Collect data from remote sensors and relay it back to a central location.
+> The MQTT uplink itself (slots, presets, JWT signing, reconnection, JSON formats) is the mature
+> implementation from agessaman's branch. See **[MQTT_IMPLEMENTATION.md](MQTT_IMPLEMENTATION.md)**
+> for the full reference.
 
-## 🚀 How to Get Started
+---
 
-- Watch the [MeshCore Intro Video](https://www.youtube.com/watch?v=t1qne8uJBAc) by Andy Kirby.
-- Watch the [MeshCore Technical Presentation](https://www.youtube.com/watch?v=OwmkVkZQTf4) by Liam Cottle.
-- Read through our [Frequently Asked Questions](./docs/faq.md) and [Documentation](https://docs.meshcore.io).
-- Flash the MeshCore firmware on a supported device.
-- Connect with a supported client.
+## Build & flash
 
-For developers:
+You'll need [PlatformIO](https://platformio.org/). The build embeds a TLS root-certificate bundle,
+so the first build downloads it (network required).
 
-- Install [PlatformIO](https://docs.platformio.org) in [Visual Studio Code](https://code.visualstudio.com).
-- Clone and open the MeshCore repository in Visual Studio Code.
-- See the example applications you can modify and run:
-  - [Companion Radio](./examples/companion_radio) - For use with an external chat app, over BLE, USB or Wi-Fi.
-  - [KISS Modem](./examples/kiss_modem) - Serial KISS protocol bridge for host applications. ([protocol docs](./docs/kiss_modem_protocol.md))
-  - [Simple Repeater](./examples/simple_repeater) - Extends network coverage by relaying messages.
-  - [Simple Room Server](./examples/simple_room_server) - A simple BBS server for shared Posts.
-  - [Simple Secure Chat](./examples/simple_secure_chat) - Secure terminal based text communication between devices.
-  - [Simple Sensor](./examples/simple_sensor) - Remote sensor node with telemetry and alerting.
+1. Set your WiFi and (optionally) brokers. Either uncomment and edit the placeholders in
+   `variants/heltec_v3/platformio.ini` under `[env:Heltec_v3_companion_radio_observer_mqtt]`, or pass
+   them on the command line:
 
-The Simple Secure Chat example can be interacted with through the Serial Monitor in Visual Studio Code, or with a Serial USB Terminal on Android.
+   ```sh
+   pio run -e Heltec_v3_companion_radio_observer_mqtt \
+     --project-option="build_flags=-D OBSERVER_WIFI_SSID='\"my-wifi\"' -D OBSERVER_WIFI_PWD='\"my-pass\"'"
+   ```
 
-## ⚡️ MeshCore Flasher
+   Key build flags:
 
-We have prebuilt firmware ready to flash on supported devices.
+   | Flag | Purpose | Default |
+   |------|---------|---------|
+   | `OBSERVER_WIFI_SSID` | WiFi SSID for the uplink | *(unset → uplink disabled)* |
+   | `OBSERVER_WIFI_PWD` | WiFi password | *(unset)* |
+   | `MQTT_DEFAULT_SLOT1_PRESET` | First broker preset | `analyzer-us` |
+   | `MQTT_DEFAULT_SLOT2_PRESET` | Second broker preset | `analyzer-eu` |
+   | `MQTT_DEFAULT_IATA` | Optional IATA airport code tag | *(empty)* |
 
-- Launch https://meshcore.io/flasher
-- Select a supported device
-- Flash one of the firmware types:
-  - Companion, Repeater or Room Server
-- Once flashing is complete, you can connect with one of the MeshCore clients below.
+   Broker preset names (e.g. `analyzer-us`, `meshmapper`, `meshrank`, `cascadiamesh`, …) are listed
+   in [MQTT_IMPLEMENTATION.md](MQTT_IMPLEMENTATION.md). **If `OBSERVER_WIFI_SSID` is left unset, the
+   firmware builds and runs as a plain companion with the uplink disabled.**
 
-## 📱 MeshCore Clients
+2. Build and flash:
 
-**Companion Firmware**
+   ```sh
+   pio run -e Heltec_v3_companion_radio_observer_mqtt -t upload
+   ```
 
-The companion firmware can be connected to via BLE, USB or Wi-Fi depending on the firmware type you flashed.
+3. Connect the MeshCore app to the device over **USB** as usual. On the serial console you can watch
+   the device boot; once WiFi associates, it begins publishing heard packets to your configured
+   brokers.
 
-- Web: https://app.meshcore.nz
-- Android: https://play.google.com/store/apps/details?id=com.liamcottle.meshcore.android
-- iOS: https://apps.apple.com/us/app/meshcore/id6742354151?platform=iphone
-- NodeJS: https://github.com/liamcottle/meshcore.js
-- Python: https://github.com/fdlamotte/meshcore-cli
+> **Why USB?** This MVP keeps the app on the USB serial link and lets the MQTT bridge own the WiFi
+> radio for the uplink. (MQTT debug logging is intentionally disabled in this target so it can't
+> corrupt the app's binary serial frames.)
 
-**Repeater and Room Server Firmware**
+---
 
-The repeater and room server firmware can be set up via USB in the web config tool.
+## How it works
 
-- https://config.meshcore.io
+The MQTT bridge is self-contained (`src/helpers/bridges/MQTTBridge.*`, `MQTTMessageBuilder`,
+`JWTHelper`, `MQTTPresets`) and reads its configuration from a `NodePrefs` struct. The companion
+firmware has its *own* `NodePrefs`, so the integration is kept in a thin glue module:
 
-They can also be managed via LoRa in the mobile app by using the Remote Management feature.
+- `examples/companion_radio/MqttObserver.{h,cpp}` — owns the bridge and a CommonCLI-style
+  `NodePrefs`. Only the `.cpp` includes `CommonCLI.h`, so the two `NodePrefs` definitions never
+  collide. The header exposes a tiny API (`begin / loop / onRx / onRxRaw / onTx`).
+- `examples/companion_radio/MyMesh.cpp` — overrides `logRx` / `logRxRaw` / `logTx` (the same hooks
+  the repeater observer uses) and forwards packets to the glue. All of this is guarded by
+  `#ifdef WITH_MQTT_BRIDGE`, so the stock companion builds are unaffected.
 
-## 🛠 Hardware Compatibility
+---
 
-MeshCore is designed for devices listed in the [MeshCore Flasher](https://meshcore.io/flasher)
+## Keeping up to date with upstream
 
-## 📜 License
+This repo is a fork of `meshcore-dev/MeshCore`, with the MQTT work tracked from
+`agessaman/MeshCore`. Typical remotes:
 
-MeshCore is open-source software released under the MIT License. You are free to use, modify, and distribute it for personal and commercial projects.
-
-## Contributing
-
-Please submit PR's using 'dev' as the base branch!
-For minor changes just submit your PR and we'll try to review it, but for anything more 'impactful' please open an Issue first and start a discussion. It is better to sound out what it is you want to achieve first, and try to come to a consensus on what the best approach is, especially when it impacts the structure or architecture of this codebase.
-
-Here are some general principles you should try to adhere to:
-* Keep it simple. Please, don't think like a high-level lang programmer. Think embedded, and keep code concise, without any unnecessary layers.
-* No dynamic memory allocation, except during setup/begin functions.
-* Use the same brace and indenting style that's in the core source modules. (A .clang-format is probably going to be added soon, but please do NOT retroactively re-format existing code. This just creates unnecessary diffs that make finding problems harder)
-
-Help us prioritize! Please react with thumbs-up to issues/PRs you care about most. We look at reaction counts when planning work.
-
-### Running unit tests
-
-To run unit tests, run the following command:
-
-```bash
-pio test --environment native --verbose
+```sh
+git remote add upstream  https://github.com/meshcore-dev/MeshCore.git   # core updates
+git remote add agessaman https://github.com/agessaman/MeshCore.git      # MQTT observer updates
+git fetch upstream && git merge upstream/dev      # pull core changes
 ```
 
-## Road-Map / To-Do
+---
 
-There are a number of fairly major features in the pipeline, with no particular time-frames attached yet. In very rough chronological order:
-- [X] Companion radio: UI redesign
-- [X] Repeater + Room Server: add ACL's (like Sensor Node has)
-- [X] Standardise Bridge mode for repeaters
-- [ ] Repeater/Bridge: Standardise the Transport Codes for zoning/filtering
-- [X] Core + Repeater: enhanced zero-hop neighbour discovery
-- [ ] Core: round-trip manual path support
-- [ ] Companion + Apps: support for multiple sub-meshes (and 'off-grid' client repeat mode)
-- [ ] Core + Apps: support for LZW message compression
-- [ ] Core: dynamic CR (Coding Rate) for weak vs strong hops
-- [ ] Core: new framework for hosting multiple virtual nodes on one physical device
-- [ ] V2 protocol spec: discussion and consensus around V2 packet protocol, including path hashes, new encryption specs, etc
+## Roadmap
 
-## 📞 Get Support
+See **[ROADMAP.md](ROADMAP.md)**.
 
-- Report bugs and request features on the [GitHub Issues](https://github.com/ripplebiz/MeshCore/issues) page.
-- Find additional guides and components on [my site](https://buymeacoffee.com/ripplebiz).
-- Join [MeshCore Discord](https://meshcore.gg) to chat with the developers and get help from the community.
+---
+
+## Credits
+
+- **[MeshCore](https://github.com/meshcore-dev/MeshCore)** by Scott Powell (ripplebiz) and
+  contributors — the underlying mesh firmware. Released under the MIT License.
+- **[agessaman/MeshCore](https://github.com/agessaman/MeshCore)** (`mqtt-bridge-implementation-flex`)
+  — the MQTT observer/bridge implementation that this project builds on.
+
+Observer Companion only adds the companion-role integration, build target, and packaging on top of
+their work. Please support the upstream projects and the broader MeshCore community.
+
+## License
+
+MIT — see [license.txt](license.txt). Same license as upstream MeshCore.
