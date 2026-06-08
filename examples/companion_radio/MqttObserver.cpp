@@ -62,7 +62,7 @@ void begin(mesh::Dispatcher* dispatcher,
   s_prefs.mqtt_status_enabled  = 1;
   s_prefs.mqtt_packets_enabled = 1;
   s_prefs.mqtt_raw_enabled     = 0;
-  s_prefs.mqtt_tx_enabled      = 2;   // 0=off, 1=all TX, 2=self-advert only
+  s_prefs.mqtt_tx_enabled      = 1;   // 0=off, 1=all TX, 2=self-advert only ("mqtt.tx all")
   s_prefs.mqtt_rx_enabled      = 1;
   s_prefs.mqtt_status_interval = 300000;
   s_prefs.wifi_power_save      = 1;
