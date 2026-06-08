@@ -35,7 +35,7 @@ static uint32_t _atoi(const char* sp) {
 #endif
 
 #ifdef ESP32
-  #ifdef WIFI_SSID
+  #if defined(WIFI_SSID) || defined(OBSERVER_WIFI_COMPANION)
     #include <helpers/esp32/SerialWifiInterface.h>
     SerialWifiInterface serial_interface;
     #ifndef TCP_PORT
@@ -199,7 +199,12 @@ void setup() {
     #endif
   );
 
-#ifdef WIFI_SSID
+#if defined(OBSERVER_WIFI_COMPANION)
+  // WiFi is owned by the MQTT bridge (see MqttObserver). The companion app
+  // connects over TCP once the bridge brings the link up; just start the server.
+  board.setInhibitSleep(true);   // prevent sleep when WiFi is active
+  serial_interface.begin(TCP_PORT);
+#elif defined(WIFI_SSID)
   board.setInhibitSleep(true);   // prevent sleep when WiFi is active
   WiFi.setAutoReconnect(true);
 
